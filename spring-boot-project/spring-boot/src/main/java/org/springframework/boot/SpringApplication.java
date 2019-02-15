@@ -160,6 +160,10 @@ import org.springframework.web.context.support.StandardServletEnvironment;
  * @see #run(Class[], String[])
  * @see #SpringApplication(Class...)
  */
+
+/**
+ * Spring boot 加载入口
+ */
 public class SpringApplication {
 
 	/**
