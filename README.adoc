@@ -1,3 +1,12 @@
+= cn
+ 分支新建于2019年2月15日
+ 此分支主要用于Spring boot的源码解读，并更新中文备注。
+ 备注中有部分内容为个人见解性质，内容仅供参考且会不定时更新。
+ 当前分支基于2019年2月15日最新版master分支
+
+ 注：
+    *截至当前（2019年2月15日）Spring boot稳定发行版为2.1.2版本
+
 = Spring Boot image:https://ci.spring.io/api/v1/teams/spring-boot/pipelines/spring-boot/jobs/build/badge["Build Status", link="https://ci.spring.io/teams/spring-boot/pipelines/spring-boot?groups=Build"] image:https://badges.gitter.im/Join Chat.svg["Chat",link="https://gitter.im/spring-projects/spring-boot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"]
 :docs: https://docs.spring.io/spring-boot/docs/current-SNAPSHOT/reference
 :github: https://github.com/spring-projects/spring-boot
