@@ -90,18 +90,24 @@ import org.springframework.web.context.support.StandardServletEnvironment;
  * Class that can be used to bootstrap and launch a Spring application from a Java main
  * method. By default class will perform the following steps to bootstrap your
  * application:
+ *当前类用于在Java的main函数中引导和开始Spirng应用。在应用启动之前会预先进行以下步骤来引导你的应用：
  *
  * <ul>
  * <li>Create an appropriate {@link ApplicationContext} instance (depending on your
  * classpath)</li>
+ * <li>1、基于你的应用的类路径创建一个适当的“应用上下文（{@link ApplicationContext}）”。</li>
  * <li>Register a {@link CommandLinePropertySource} to expose command line arguments as
  * Spring properties</li>
+ * <li>2、注册一个“命令行属性加载器（{@link CommandLinePropertySource}）”来将命令行参数转化为Spring的配置项。</li>
  * <li>Refresh the application context, loading all singleton beans</li>
+ * <li>3、刷新应用上下文，加载所有的单例bean。</li>
  * <li>Trigger any {@link CommandLineRunner} beans</li>
+ * <li>4、自动执行所有实现了{@link CommandLineRunner}接口的bean，以实现在项目启动后自动执行某些操作。</li>
  * </ul>
  *
  * In most circumstances the static {@link #run(Class, String[])} method can be called
  * directly from your {@literal main} method to bootstrap your application:
+ * 大多数情况下这个静态方法{@link #run(Class, String[])}会在你的应用的main函数中被直接调用，来引导加载你的应用。示例如下：
  *
  * <pre class="code">
  * &#064;Configuration
@@ -119,6 +125,7 @@ import org.springframework.web.context.support.StandardServletEnvironment;
  * <p>
  * For more advanced configuration a {@link SpringApplication} instance can be created and
  * customized before being run:
+ * 更高级些的应用是创建一个{@link SpringApplication}实例，来加载一个自定义的配置。示例如下：
  *
  * <pre class="code">
  * public static void main(String[] args) {
@@ -131,12 +138,19 @@ import org.springframework.web.context.support.StandardServletEnvironment;
  * {@link SpringApplication}s can read beans from a variety of different sources. It is
  * generally recommended that a single {@code @Configuration} class is used to bootstrap
  * your application, however, you may also set {@link #getSources() sources} from:
+ * {@link SpringApplication}可以从多种不同的来源中读取bean。通常推荐使用
+ * 一个单例模式的{@code @Configuration}来引导加载你的应用，无论怎样，
+ * 你可以通过以下方式设置{@link #getSources()}来加载资源：
  * <ul>
  * <li>The fully qualified class name to be loaded by
  * {@link AnnotatedBeanDefinitionReader}</li>
+ * <li>1、使用{@link AnnotatedBeanDefinitionReader}}通过完整的类名来加载资源。</li>
  * <li>The location of an XML resource to be loaded by {@link XmlBeanDefinitionReader}, or
  * a groovy script to be loaded by {@link GroovyBeanDefinitionReader}</li>
+ * <li>2、使用{@link XmlBeanDefinitionReader}通过本地XML文件加载资源，或者
+ * 使用{@link GroovyBeanDefinitionReader}通过groovy脚本加载资源。</li>
  * <li>The name of a package to be scanned by {@link ClassPathBeanDefinitionScanner}</li>
+ * <li>3、使用{@link ClassPathBeanDefinitionScanner}通过报名扫描来加载资源。</li>
  * </ul>
  *
  * Configuration properties are also bound to the {@link SpringApplication}. This makes it
@@ -144,6 +158,7 @@ import org.springframework.web.context.support.StandardServletEnvironment;
  * sources ("spring.main.sources" - a CSV list) the flag to indicate a web environment
  * ("spring.main.web-application-type=none") or the flag to switch off the banner
  * ("spring.main.banner-mode=off").
+ * 配置项也可以绑定到{@link SpringApplication}。这让动态设置{@link SpringApplication}配置成为可能。
  *
  * @author Phillip Webb
  * @author Dave Syer
@@ -281,6 +296,11 @@ public class SpringApplication {
 		this.mainApplicationClass = deduceMainApplicationClass();
 	}
 
+	/**
+	 * 通过调用栈，推断出main函数位于哪个类中
+	 *
+	 * @return 含有main函数的类实例
+	 */
 	private Class<?> deduceMainApplicationClass() {
 		try {
 			StackTraceElement[] stackTrace = new RuntimeException().getStackTrace();
@@ -299,6 +319,7 @@ public class SpringApplication {
 	/**
 	 * Run the Spring application, creating and refreshing a new
 	 * {@link ApplicationContext}.
+	 * 运行Spirng应用，创建并刷新一个新的应用上下文{@link ApplicationContext}。
 	 * @param args the application arguments (usually passed from a Java main method)
 	 * @return a running {@link ApplicationContext}
 	 */
