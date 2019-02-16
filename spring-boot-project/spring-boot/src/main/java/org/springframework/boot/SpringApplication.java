@@ -324,29 +324,39 @@ public class SpringApplication {
 	 * @return a running {@link ApplicationContext}
 	 */
 	public ConfigurableApplicationContext run(String... args) {
+		//启动计时器，来计算启动的时间。
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
 		ConfigurableApplicationContext context = null;
 		Collection<SpringBootExceptionReporter> exceptionReporters = new ArrayList<>();
+		//配置一些系统参数
 		configureHeadlessProperty();
+		//创建Spring应用运行监听器
 		SpringApplicationRunListeners listeners = getRunListeners(args);
+		//发布应用启动事件
 		listeners.starting();
 		try {
+			//初始化默认应用参数
 			ApplicationArguments applicationArguments = new DefaultApplicationArguments(
 					args);
+			//使用参数初始化Spring环境：用于表示当前应用运行时所处的环境
 			ConfigurableEnvironment environment = prepareEnvironment(listeners,
 					applicationArguments);
 			configureIgnoreBeanInfo(environment);
 			Banner printedBanner = printBanner(environment);
+			//根据不同的应用类型，创建不同的应用上下文
 			context = createApplicationContext();
+			//准备异常报告器
 			exceptionReporters = getSpringFactoriesInstances(
 					SpringBootExceptionReporter.class,
 					new Class[] { ConfigurableApplicationContext.class }, context);
 			prepareContext(context, environment, listeners, applicationArguments,
 					printedBanner);
+			//刷新应用上下文
 			refreshContext(context);
 			afterRefresh(context, applicationArguments);
 			stopWatch.stop();
+			//记录Spring应用的启动信息
 			if (this.logStartupInfo) {
 				new StartupInfoLogger(this.mainApplicationClass)
 						.logStarted(getApplicationLog(), stopWatch);
