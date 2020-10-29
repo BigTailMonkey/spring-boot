@@ -23,9 +23,9 @@ import java.util.function.Supplier;
 
 import org.apache.commons.logging.Log;
 
+import org.springframework.boot.ConfigurableBootstrapContext;
+import org.springframework.boot.DefaultBootstrapContext;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.env.BootstrapRegistry;
-import org.springframework.boot.env.DefaultBootstrapRegisty;
 import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.boot.logging.DeferredLogFactory;
 import org.springframework.core.Ordered;
@@ -51,21 +51,23 @@ public class ConfigDataEnvironmentPostProcessor implements EnvironmentPostProces
 	public static final int ORDER = Ordered.HIGHEST_PRECEDENCE + 10;
 
 	/**
-	 * Property used to determine if all locations are optional and
-	 * {@code ConfigDataLocationNotFoundExceptions} should be ignored.
+	 * Property used to determine what action to take when a
+	 * {@code ConfigDataLocationNotFoundException} is thrown.
+	 * @see ConfigDataNotFoundAction
 	 */
-	public static final String ALL_LOCATIONS_OPTIONAL_PROPERTY = ConfigDataEnvironment.ALL_LOCATIONS_OPTIONAL_PROPERTY;
+	public static final String ON_LOCATION_NOT_FOUND_PROPERTY = ConfigDataEnvironment.ON_NOT_FOUND_PROPERTY;
 
 	private final DeferredLogFactory logFactory;
 
 	private final Log logger;
 
-	private final BootstrapRegistry bootstrapRegistry;
+	private final ConfigurableBootstrapContext bootstrapContext;
 
-	public ConfigDataEnvironmentPostProcessor(DeferredLogFactory logFactory, BootstrapRegistry bootstrapRegistry) {
+	public ConfigDataEnvironmentPostProcessor(DeferredLogFactory logFactory,
+			ConfigurableBootstrapContext bootstrapContext) {
 		this.logFactory = logFactory;
 		this.logger = logFactory.getLog(getClass());
-		this.bootstrapRegistry = bootstrapRegistry;
+		this.bootstrapContext = bootstrapContext;
 	}
 
 	@Override
@@ -94,7 +96,7 @@ public class ConfigDataEnvironmentPostProcessor implements EnvironmentPostProces
 
 	ConfigDataEnvironment getConfigDataEnvironment(ConfigurableEnvironment environment, ResourceLoader resourceLoader,
 			Collection<String> additionalProfiles) {
-		return new ConfigDataEnvironment(this.logFactory, this.bootstrapRegistry, environment, resourceLoader,
+		return new ConfigDataEnvironment(this.logFactory, this.bootstrapContext, environment, resourceLoader,
 				additionalProfiles);
 	}
 
@@ -124,13 +126,13 @@ public class ConfigDataEnvironmentPostProcessor implements EnvironmentPostProces
 	 * directly and not necessarily as part of a {@link SpringApplication}.
 	 * @param environment the environment to apply {@link ConfigData} to
 	 * @param resourceLoader the resource loader to use
-	 * @param bootstrapRegistry the bootstrap registry to use or {@code null} to use a
-	 * throw-away registry
+	 * @param bootstrapContext the bootstrap context to use or {@code null} to use a
+	 * throw-away context
 	 * @param additionalProfiles any additional profiles that should be applied
 	 */
 	public static void applyTo(ConfigurableEnvironment environment, ResourceLoader resourceLoader,
-			BootstrapRegistry bootstrapRegistry, String... additionalProfiles) {
-		applyTo(environment, resourceLoader, bootstrapRegistry, Arrays.asList(additionalProfiles));
+			ConfigurableBootstrapContext bootstrapContext, String... additionalProfiles) {
+		applyTo(environment, resourceLoader, bootstrapContext, Arrays.asList(additionalProfiles));
 	}
 
 	/**
@@ -139,16 +141,16 @@ public class ConfigDataEnvironmentPostProcessor implements EnvironmentPostProces
 	 * directly and not necessarily as part of a {@link SpringApplication}.
 	 * @param environment the environment to apply {@link ConfigData} to
 	 * @param resourceLoader the resource loader to use
-	 * @param bootstrapRegistry the bootstrap registry to use or {@code null} to use a
-	 * throw-away registry
+	 * @param bootstrapContext the bootstrap context to use or {@code null} to use a
+	 * throw-away context
 	 * @param additionalProfiles any additional profiles that should be applied
 	 */
 	public static void applyTo(ConfigurableEnvironment environment, ResourceLoader resourceLoader,
-			BootstrapRegistry bootstrapRegistry, Collection<String> additionalProfiles) {
+			ConfigurableBootstrapContext bootstrapContext, Collection<String> additionalProfiles) {
 		DeferredLogFactory logFactory = Supplier::get;
-		bootstrapRegistry = (bootstrapRegistry != null) ? bootstrapRegistry : new DefaultBootstrapRegisty();
+		bootstrapContext = (bootstrapContext != null) ? bootstrapContext : new DefaultBootstrapContext();
 		ConfigDataEnvironmentPostProcessor postProcessor = new ConfigDataEnvironmentPostProcessor(logFactory,
-				bootstrapRegistry);
+				bootstrapContext);
 		postProcessor.postProcessEnvironment(environment, resourceLoader, additionalProfiles);
 	}
 

@@ -32,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLException;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -46,7 +45,6 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.Sinks;
 import reactor.netty.NettyPipeline;
 import reactor.netty.http.client.HttpClient;
@@ -72,6 +70,7 @@ import org.springframework.util.SocketUtils;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -110,8 +109,8 @@ public abstract class AbstractReactiveWebServerFactoryTests {
 			return port;
 		});
 		Mono<String> result = getWebClient(this.webServer.getPort()).build().post().uri("/test")
-				.contentType(MediaType.TEXT_PLAIN).body(BodyInserters.fromValue("Hello World")).exchange()
-				.flatMap((response) -> response.bodyToMono(String.class));
+				.contentType(MediaType.TEXT_PLAIN).body(BodyInserters.fromValue("Hello World")).retrieve()
+				.bodyToMono(String.class);
 		assertThat(result.block(Duration.ofSeconds(30))).isEqualTo("Hello World");
 		assertThat(this.webServer.getPort()).isEqualTo(specificPort);
 	}
@@ -139,8 +138,7 @@ public abstract class AbstractReactiveWebServerFactoryTests {
 		WebClient client = WebClient.builder().baseUrl("https://localhost:" + this.webServer.getPort())
 				.clientConnector(connector).build();
 		Mono<String> result = client.post().uri("/test").contentType(MediaType.TEXT_PLAIN)
-				.body(BodyInserters.fromValue("Hello World")).exchange()
-				.flatMap((response) -> response.bodyToMono(String.class));
+				.body(BodyInserters.fromValue("Hello World")).retrieve().bodyToMono(String.class);
 		assertThat(result.block(Duration.ofSeconds(30))).isEqualTo("Hello World");
 	}
 
@@ -161,8 +159,7 @@ public abstract class AbstractReactiveWebServerFactoryTests {
 				.clientConnector(connector).build();
 
 		Mono<String> result = client.post().uri("/test").contentType(MediaType.TEXT_PLAIN)
-				.body(BodyInserters.fromValue("Hello World")).exchange()
-				.flatMap((response) -> response.bodyToMono(String.class));
+				.body(BodyInserters.fromValue("Hello World")).retrieve().bodyToMono(String.class);
 
 		StepVerifier.setDefaultTimeout(Duration.ofSeconds(30));
 		StepVerifier.create(result).expectNext("Hello World").verifyComplete();
@@ -234,8 +231,7 @@ public abstract class AbstractReactiveWebServerFactoryTests {
 		WebClient client = WebClient.builder().baseUrl("https://localhost:" + this.webServer.getPort())
 				.clientConnector(clientConnector).build();
 		Mono<String> result = client.post().uri("/test").contentType(MediaType.TEXT_PLAIN)
-				.body(BodyInserters.fromValue("Hello World")).exchange()
-				.flatMap((response) -> response.bodyToMono(String.class));
+				.body(BodyInserters.fromValue("Hello World")).retrieve().bodyToMono(String.class);
 		assertThat(result.block(Duration.ofSeconds(30))).isEqualTo("Hello World");
 	}
 
@@ -267,9 +263,8 @@ public abstract class AbstractReactiveWebServerFactoryTests {
 		WebClient client = WebClient.builder().baseUrl("https://localhost:" + this.webServer.getPort())
 				.clientConnector(clientConnector).build();
 		Mono<String> result = client.post().uri("/test").contentType(MediaType.TEXT_PLAIN)
-				.body(BodyInserters.fromValue("Hello World")).exchange()
-				.flatMap((response) -> response.bodyToMono(String.class));
-		StepVerifier.create(result).expectError(SSLException.class).verify(Duration.ofSeconds(10));
+				.body(BodyInserters.fromValue("Hello World")).retrieve().bodyToMono(String.class);
+		StepVerifier.create(result).expectError(WebClientRequestException.class).verify(Duration.ofSeconds(10));
 	}
 
 	protected WebClient.Builder getWebClient(int port) {
@@ -285,16 +280,14 @@ public abstract class AbstractReactiveWebServerFactoryTests {
 	@Test
 	protected void compressionOfResponseToGetRequest() {
 		WebClient client = prepareCompressionTest();
-		ResponseEntity<Void> response = client.get().exchange().flatMap((res) -> res.toEntity(Void.class))
-				.block(Duration.ofSeconds(30));
+		ResponseEntity<Void> response = client.get().retrieve().toBodilessEntity().block(Duration.ofSeconds(30));
 		assertResponseIsCompressed(response);
 	}
 
 	@Test
 	protected void compressionOfResponseToPostRequest() {
 		WebClient client = prepareCompressionTest();
-		ResponseEntity<Void> response = client.post().exchange().flatMap((res) -> res.toEntity(Void.class))
-				.block(Duration.ofSeconds(30));
+		ResponseEntity<Void> response = client.post().retrieve().toBodilessEntity().block(Duration.ofSeconds(30));
 		assertResponseIsCompressed(response);
 	}
 
@@ -304,8 +297,7 @@ public abstract class AbstractReactiveWebServerFactoryTests {
 		compression.setEnabled(true);
 		compression.setMinResponseSize(DataSize.ofBytes(3001));
 		WebClient client = prepareCompressionTest(compression);
-		ResponseEntity<Void> response = client.get().exchange().flatMap((res) -> res.toEntity(Void.class))
-				.block(Duration.ofSeconds(30));
+		ResponseEntity<Void> response = client.get().retrieve().toBodilessEntity().block(Duration.ofSeconds(30));
 		assertResponseIsNotCompressed(response);
 	}
 
@@ -315,8 +307,7 @@ public abstract class AbstractReactiveWebServerFactoryTests {
 		compression.setEnabled(true);
 		compression.setMimeTypes(new String[] { "application/json" });
 		WebClient client = prepareCompressionTest(compression);
-		ResponseEntity<Void> response = client.get().exchange().flatMap((res) -> res.toEntity(Void.class))
-				.block(Duration.ofSeconds(30));
+		ResponseEntity<Void> response = client.get().retrieve().toBodilessEntity().block(Duration.ofSeconds(30));
 		assertResponseIsNotCompressed(response);
 	}
 
@@ -326,8 +317,8 @@ public abstract class AbstractReactiveWebServerFactoryTests {
 		compression.setEnabled(true);
 		compression.setExcludedUserAgents(new String[] { "testUserAgent" });
 		WebClient client = prepareCompressionTest(compression);
-		ResponseEntity<Void> response = client.get().header("User-Agent", "testUserAgent").exchange()
-				.flatMap((res) -> res.toEntity(Void.class)).block(Duration.ofSeconds(30));
+		ResponseEntity<Void> response = client.get().header("User-Agent", "testUserAgent").retrieve().toBodilessEntity()
+				.block(Duration.ofSeconds(30));
 		assertResponseIsNotCompressed(response);
 	}
 
@@ -337,8 +328,7 @@ public abstract class AbstractReactiveWebServerFactoryTests {
 		compression.setEnabled(true);
 		compression.setMimeTypes(new String[] { "application/json" });
 		WebClient client = prepareCompressionTest(compression, "test~plain");
-		ResponseEntity<Void> response = client.get().exchange().flatMap((res) -> res.toEntity(Void.class))
-				.block(Duration.ofSeconds(30));
+		ResponseEntity<Void> response = client.get().retrieve().toBodilessEntity().block(Duration.ofSeconds(30));
 		assertResponseIsNotCompressed(response);
 	}
 
@@ -508,7 +498,7 @@ public abstract class AbstractReactiveWebServerFactoryTests {
 
 	protected static class BlockingHandler implements HttpHandler {
 
-		private final BlockingQueue<MonoProcessor<Void>> processors = new ArrayBlockingQueue<>(10);
+		private final BlockingQueue<Sinks.Empty<Void>> processors = new ArrayBlockingQueue<>(10);
 
 		private volatile boolean blocking = true;
 
@@ -519,8 +509,8 @@ public abstract class AbstractReactiveWebServerFactoryTests {
 		@Override
 		public Mono<Void> handle(ServerHttpRequest request, ServerHttpResponse response) {
 			if (this.blocking) {
-				Sinks.One<Void> completion = Sinks.one();
-				this.processors.add(MonoProcessor.fromSink(completion));
+				Sinks.Empty<Void> completion = Sinks.empty();
+				this.processors.add(completion);
 				return completion.asMono().then(Mono.empty());
 			}
 			return Mono.empty();
@@ -528,8 +518,8 @@ public abstract class AbstractReactiveWebServerFactoryTests {
 
 		public void completeOne() {
 			try {
-				MonoProcessor<Void> processor = this.processors.take();
-				processor.onComplete();
+				Sinks.Empty<Void> processor = this.processors.take();
+				processor.tryEmitEmpty();
 			}
 			catch (InterruptedException ex) {
 				Thread.currentThread().interrupt();
@@ -544,7 +534,7 @@ public abstract class AbstractReactiveWebServerFactoryTests {
 
 		public void stopBlocking() {
 			this.blocking = false;
-			this.processors.forEach(MonoProcessor::onComplete);
+			this.processors.forEach(Sinks.Empty::tryEmitEmpty);
 		}
 
 	}

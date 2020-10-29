@@ -113,11 +113,13 @@ class FlywayPropertiesTests {
 		ignoreProperties(configuration, "dryRunOutputAsFile", "dryRunOutputAsFileName");
 		// Handled as createSchemas
 		ignoreProperties(configuration, "shouldCreateSchemas");
+		// Getters for the DataSource settings rather than actual properties
+		ignoreProperties(configuration, "password", "url", "user");
 		List<String> configurationKeys = new ArrayList<>(configuration.keySet());
 		Collections.sort(configurationKeys);
 		List<String> propertiesKeys = new ArrayList<>(properties.keySet());
 		Collections.sort(propertiesKeys);
-		assertThat(configurationKeys).isEqualTo(propertiesKeys);
+		assertThat(configurationKeys).containsExactlyElementsOf(propertiesKeys);
 	}
 
 	private void ignoreProperties(Map<String, ?> index, String... propertyNames) {

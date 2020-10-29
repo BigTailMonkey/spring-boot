@@ -38,6 +38,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.validation.ValidatorFactory;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoConfiguration;
@@ -105,7 +107,6 @@ import org.springframework.web.servlet.i18n.FixedLocaleResolver;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolver;
-import org.springframework.web.servlet.resource.AppCacheManifestTransformer;
 import org.springframework.web.servlet.resource.CachingResourceResolver;
 import org.springframework.web.servlet.resource.CachingResourceTransformer;
 import org.springframework.web.servlet.resource.ContentVersionStrategy;
@@ -255,6 +256,7 @@ class WebMvcAutoConfigurationTests {
 	}
 
 	@Test
+	@SuppressWarnings("deprecation")
 	void resourceHandlerChainCustomized() {
 		this.contextRunner
 				.withPropertyValues("spring.resources.chain.enabled:true", "spring.resources.chain.cache:false",
@@ -269,8 +271,9 @@ class WebMvcAutoConfigurationTests {
 					assertThat(getResourceTransformers(context, "/webjars/**")).hasSize(2);
 					assertThat(getResourceResolvers(context, "/**")).extractingResultOf("getClass").containsOnly(
 							EncodedResourceResolver.class, VersionResourceResolver.class, PathResourceResolver.class);
-					assertThat(getResourceTransformers(context, "/**")).extractingResultOf("getClass")
-							.containsOnly(CssLinkResourceTransformer.class, AppCacheManifestTransformer.class);
+					assertThat(getResourceTransformers(context, "/**")).extractingResultOf("getClass").containsOnly(
+							CssLinkResourceTransformer.class,
+							org.springframework.web.servlet.resource.AppCacheManifestTransformer.class);
 					VersionResourceResolver resolver = (VersionResourceResolver) getResourceResolvers(context, "/**")
 							.get(1);
 					Map<String, VersionStrategy> strategyMap = resolver.getStrategyMap();
@@ -288,10 +291,11 @@ class WebMvcAutoConfigurationTests {
 		});
 	}
 
-	@Test
-	void overrideLocale() {
-		this.contextRunner.withPropertyValues("spring.mvc.locale:en_UK", "spring.mvc.locale-resolver=fixed")
-				.run((loader) -> {
+	@ParameterizedTest
+	@ValueSource(strings = { "mvc", "web" })
+	void overrideLocale(String mvcOrWeb) {
+		this.contextRunner.withPropertyValues("spring." + mvcOrWeb + ".locale:en_UK",
+				"spring." + mvcOrWeb + ".locale-resolver=fixed").run((loader) -> {
 					// mock request and set user preferred locale
 					MockHttpServletRequest request = new MockHttpServletRequest();
 					request.addPreferredLocale(StringUtils.parseLocaleString("nl_NL"));
@@ -305,9 +309,10 @@ class WebMvcAutoConfigurationTests {
 				});
 	}
 
-	@Test
-	void useAcceptHeaderLocale() {
-		this.contextRunner.withPropertyValues("spring.mvc.locale:en_UK").run((loader) -> {
+	@ParameterizedTest
+	@ValueSource(strings = { "mvc", "web" })
+	void useAcceptHeaderLocale(String mvcOrWeb) {
+		this.contextRunner.withPropertyValues("spring." + mvcOrWeb + ".locale:en_UK").run((loader) -> {
 			// mock request and set user preferred locale
 			MockHttpServletRequest request = new MockHttpServletRequest();
 			request.addPreferredLocale(StringUtils.parseLocaleString("nl_NL"));
@@ -320,9 +325,10 @@ class WebMvcAutoConfigurationTests {
 		});
 	}
 
-	@Test
-	void useDefaultLocaleIfAcceptHeaderNoSet() {
-		this.contextRunner.withPropertyValues("spring.mvc.locale:en_UK").run((context) -> {
+	@ParameterizedTest
+	@ValueSource(strings = { "mvc", "web" })
+	void useDefaultLocaleIfAcceptHeaderNoSet(String mvcOrWeb) {
+		this.contextRunner.withPropertyValues("spring." + mvcOrWeb + ".locale:en_UK").run((context) -> {
 			// mock request and set user preferred locale
 			MockHttpServletRequest request = new MockHttpServletRequest();
 			LocaleResolver localeResolver = context.getBean(LocaleResolver.class);
@@ -918,8 +924,8 @@ class WebMvcAutoConfigurationTests {
 		for (Object handler : handlerMap.keySet()) {
 			if (handler instanceof ResourceHttpRequestHandler) {
 				assertThat(((ResourceHttpRequestHandler) handler).getCacheSeconds()).isEqualTo(-1);
-				assertThat(((ResourceHttpRequestHandler) handler).getCacheControl())
-						.isEqualToComparingFieldByField(CacheControl.maxAge(5, TimeUnit.SECONDS).proxyRevalidate());
+				assertThat(((ResourceHttpRequestHandler) handler).getCacheControl()).usingRecursiveComparison()
+						.isEqualTo(CacheControl.maxAge(5, TimeUnit.SECONDS).proxyRevalidate());
 			}
 		}
 	}

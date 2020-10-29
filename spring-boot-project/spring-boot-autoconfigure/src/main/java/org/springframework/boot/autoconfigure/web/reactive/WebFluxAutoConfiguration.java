@@ -36,6 +36,7 @@ import org.springframework.boot.autoconfigure.validation.ValidationAutoConfigura
 import org.springframework.boot.autoconfigure.validation.ValidatorAdapter;
 import org.springframework.boot.autoconfigure.web.ConditionalOnEnabledResourceChain;
 import org.springframework.boot.autoconfigure.web.ResourceProperties;
+import org.springframework.boot.autoconfigure.web.WebProperties;
 import org.springframework.boot.autoconfigure.web.format.DateTimeFormatters;
 import org.springframework.boot.autoconfigure.web.format.WebConversionService;
 import org.springframework.boot.autoconfigure.web.reactive.WebFluxProperties.Format;
@@ -69,6 +70,9 @@ import org.springframework.web.reactive.result.method.annotation.ArgumentResolve
 import org.springframework.web.reactive.result.method.annotation.RequestMappingHandlerAdapter;
 import org.springframework.web.reactive.result.method.annotation.RequestMappingHandlerMapping;
 import org.springframework.web.reactive.result.view.ViewResolver;
+import org.springframework.web.server.i18n.AcceptHeaderLocaleContextResolver;
+import org.springframework.web.server.i18n.FixedLocaleContextResolver;
+import org.springframework.web.server.i18n.LocaleContextResolver;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for {@link EnableWebFlux WebFlux}.
@@ -215,15 +219,19 @@ public class WebFluxAutoConfiguration {
 	 * Configuration equivalent to {@code @EnableWebFlux}.
 	 */
 	@Configuration(proxyBeanMethods = false)
+	@EnableConfigurationProperties(WebProperties.class)
 	public static class EnableWebFluxConfiguration extends DelegatingWebFluxConfiguration {
 
 		private final WebFluxProperties webFluxProperties;
 
+		private final WebProperties webProperties;
+
 		private final WebFluxRegistrations webFluxRegistrations;
 
-		public EnableWebFluxConfiguration(WebFluxProperties webFluxProperties,
+		public EnableWebFluxConfiguration(WebFluxProperties webFluxProperties, WebProperties webProperties,
 				ObjectProvider<WebFluxRegistrations> webFluxRegistrations) {
 			this.webFluxProperties = webFluxProperties;
+			this.webProperties = webProperties;
 			this.webFluxRegistrations = webFluxRegistrations.getIfUnique();
 		}
 
@@ -262,6 +270,18 @@ public class WebFluxAutoConfiguration {
 				return this.webFluxRegistrations.getRequestMappingHandlerMapping();
 			}
 			return super.createRequestMappingHandlerMapping();
+		}
+
+		@Bean
+		@Override
+		@ConditionalOnMissingBean
+		public LocaleContextResolver localeContextResolver() {
+			if (this.webProperties.getLocaleResolver() == WebProperties.LocaleResolver.FIXED) {
+				return new FixedLocaleContextResolver(this.webProperties.getLocale());
+			}
+			AcceptHeaderLocaleContextResolver localeContextResolver = new AcceptHeaderLocaleContextResolver();
+			localeContextResolver.setDefaultLocale(this.webProperties.getLocale());
+			return localeContextResolver;
 		}
 
 	}

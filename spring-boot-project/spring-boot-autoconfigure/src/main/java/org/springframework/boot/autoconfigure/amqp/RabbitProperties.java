@@ -121,6 +121,11 @@ public class RabbitProperties {
 	private Duration connectionTimeout;
 
 	/**
+	 * Continuation timeout for RPC calls in channels. Set it to zero to wait forever.
+	 */
+	private Duration channelRpcTimeout = Duration.ofMinutes(10);
+
+	/**
 	 * Cache configuration.
 	 */
 	private final Cache cache = new Cache();
@@ -285,7 +290,7 @@ public class RabbitProperties {
 	}
 
 	public void setVirtualHost(String virtualHost) {
-		this.virtualHost = "".equals(virtualHost) ? "/" : virtualHost;
+		this.virtualHost = StringUtils.hasText(virtualHost) ? virtualHost : "/";
 	}
 
 	public AddressShuffleMode getAddressShuffleMode() {
@@ -334,6 +339,14 @@ public class RabbitProperties {
 
 	public void setConnectionTimeout(Duration connectionTimeout) {
 		this.connectionTimeout = connectionTimeout;
+	}
+
+	public Duration getChannelRpcTimeout() {
+		return this.channelRpcTimeout;
+	}
+
+	public void setChannelRpcTimeout(Duration channelRpcTimeout) {
+		this.channelRpcTimeout = channelRpcTimeout;
 	}
 
 	public Cache getCache() {
@@ -650,6 +663,12 @@ public class RabbitProperties {
 		private Duration idleEventInterval;
 
 		/**
+		 * Whether the container should present batched messages as discrete messages or
+		 * call the listener with the batch.
+		 */
+		private boolean deBatchingEnabled = true;
+
+		/**
 		 * Optional properties for a retry interceptor.
 		 */
 		private final ListenerRetry retry = new ListenerRetry();
@@ -696,6 +715,14 @@ public class RabbitProperties {
 
 		public abstract boolean isMissingQueuesFatal();
 
+		public boolean isDeBatchingEnabled() {
+			return this.deBatchingEnabled;
+		}
+
+		public void setDeBatchingEnabled(boolean deBatchingEnabled) {
+			this.deBatchingEnabled = deBatchingEnabled;
+		}
+
 		public ListenerRetry getRetry() {
 			return this.retry;
 		}
@@ -730,6 +757,14 @@ public class RabbitProperties {
 		 */
 		private boolean missingQueuesFatal = true;
 
+		/**
+		 * Whether the container creates a batch of messages based on the
+		 * 'receive-timeout' and 'batch-size'. Coerces 'de-batching-enabled' to true to
+		 * include the contents of a producer created batch in the batch as discrete
+		 * records.
+		 */
+		private boolean consumerBatchEnabled;
+
 		public Integer getConcurrency() {
 			return this.concurrency;
 		}
@@ -761,6 +796,14 @@ public class RabbitProperties {
 
 		public void setMissingQueuesFatal(boolean missingQueuesFatal) {
 			this.missingQueuesFatal = missingQueuesFatal;
+		}
+
+		public boolean isConsumerBatchEnabled() {
+			return this.consumerBatchEnabled;
+		}
+
+		public void setConsumerBatchEnabled(boolean consumerBatchEnabled) {
+			this.consumerBatchEnabled = consumerBatchEnabled;
 		}
 
 	}
